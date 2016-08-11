@@ -13,3 +13,12 @@
 
 .vs/*
 UWP/*
+
+# Strip for submodule
+/ProjectSettings
+/Assets/FungusExamples
+/Assets/FungusExamples.meta
+/Assets/Tests
+/Assets/Tests.meta
+/Assets/UnityTestTools
+/Assets/UnityTestTools.meta
