@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -7,8 +6,11 @@ using System.Text;
 
 namespace Fungus
 {
-	public class ConversationManager
-	{
+    /// <summary>
+    /// Helper class to manage parsing and executing the conversation format.
+    /// </summary>
+    public class ConversationManager
+    {
         protected struct ConversationItem
         {
             public string Text { get; set; }
@@ -16,26 +18,28 @@ namespace Fungus
             public Sprite Portrait { get; set; }
             public RectTransform Position { get; set; }
             public bool Hide { get; set; }
+            public FacingDirection FacingDirection { get; set; }
+            public bool Flip { get; set; }
         }
 
-		protected Character[] characters;
+        protected Character[] characters;
 
-		protected bool exitSayWait;
+        protected bool exitSayWait;
 
-		public void PopulateCharacterCache()
-		{
-			// cache characters for faster lookup
-			characters = UnityEngine.Object.FindObjectsOfType<Character>();
-		}
+        public void PopulateCharacterCache()
+        {
+            // cache characters for faster lookup
+            characters = UnityEngine.Object.FindObjectsOfType<Character>();
+        }
 
         protected SayDialog GetSayDialog(Character character)
         {
             SayDialog sayDialog = null;
             if (character != null)
             {
-                if (character.setSayDialog != null)
+                if (character.SetSayDialog != null)
                 {
-                    sayDialog = character.setSayDialog;
+                    sayDialog = character.SetSayDialog;
                 }
             }
 
@@ -47,17 +51,17 @@ namespace Fungus
             return sayDialog;
         }
 
-		/// <summary>
-		/// Parse and execute a conversation string
-		/// </summary>
-		/// <param name="conv"></param>
-		public IEnumerator DoConversation(string conv)
-		{
-			if (string.IsNullOrEmpty(conv))
-			{
-				yield break;
-			}
-			
+        /// <summary>
+        /// Parse and execute a conversation string
+        /// </summary>
+        /// <param name="conv"></param>
+        public IEnumerator DoConversation(string conv)
+        {
+            if (string.IsNullOrEmpty(conv))
+            {
+                yield break;
+            }
+            
             var conversationItems = Parse(conv);
 
             if (conversationItems.Count == 0)
@@ -75,7 +79,7 @@ namespace Fungus
             for (int i = 0; i < conversationItems.Count; ++i)
             {
                 ConversationItem item = conversationItems[i];
-
+                
                 if (item.Character != null)
                 {
                     currentCharacter = item.Character;
@@ -103,19 +107,22 @@ namespace Fungus
                 var stage = Stage.GetActiveStage();
 
                 if (stage != null && currentCharacter != null &&
-                    (currentPortrait != currentCharacter.state.portrait || 
-                     currentPosition != currentCharacter.state.position))
+                    (currentPortrait != currentCharacter.State.portrait || 
+                     currentPosition != currentCharacter.State.position))
                 {
                     var portraitOptions = new PortraitOptions(true);
                     portraitOptions.display = item.Hide ? DisplayType.Hide : DisplayType.Show;
                     portraitOptions.character = currentCharacter;
-                    portraitOptions.fromPosition = currentCharacter.state.position;
+                    portraitOptions.fromPosition = currentCharacter.State.position;
                     portraitOptions.toPosition = currentPosition;
                     portraitOptions.portrait = currentPortrait;
 
+                    //Flip option - Flip the opposite direction the character is currently facing
+                    if (item.Flip) portraitOptions.facing = item.FacingDirection;
+                    
                     // Do a move tween if the character is already on screen and not yet at the specified position
-                    if (currentCharacter.state.onScreen &&
-                        currentPosition != currentCharacter.state.position)
+                    if (currentCharacter.State.onScreen &&
+                        currentPosition != currentCharacter.State.position)
                     {
                         portraitOptions.move = true;
                     }
@@ -137,31 +144,27 @@ namespace Fungus
                 }
                     
                 previousCharacter = currentCharacter;
+                
+                if (!string.IsNullOrEmpty(item.Text)) { 
+                    exitSayWait = false;
+                    sayDialog.Say(item.Text, true, true, true, false, null, () => {
+                        exitSayWait = true;
+                    });
 
-                // Ignore Lua style comments and blank lines
-                if (item.Text.StartsWith("--") || item.Text.Trim() == "")
-                {
-                    continue;
+                    while (!exitSayWait)
+                    {
+                        yield return null;
+                    }
+                    exitSayWait = false;
                 }
-
-                exitSayWait = false;
-                sayDialog.Say(item.Text, true, true, true, false, null, () => {
-                    exitSayWait = true;
-                });
-
-                while (!exitSayWait)
-                {
-                    yield return null;
-                }
-                exitSayWait = false;
             }
-		}
+        }
 
         protected virtual List<ConversationItem> Parse(string conv)
         {
             //find SimpleScript say strings with portrait options
             //You can test regex matches here: http://regexstorm.net/tester
-            var sayRegex = new Regex(@"((?<sayParams>[\w ""]*):)?(?<text>.*)\r*(\n|$)");
+            var sayRegex = new Regex(@"((?<sayParams>[\w ""><]*):)?(?<text>.*)\r*(\n|$)");
             MatchCollection sayMatches = sayRegex.Matches(conv);
 
             var items = new List<ConversationItem>(sayMatches.Count);
@@ -173,8 +176,9 @@ namespace Fungus
                 string sayParams = sayMatches[i].Groups["sayParams"].Value;
 
                 // As text and SayParams are both optional, an empty string will match the regex.
-                // We can ignore any matches were both are empty.
-                if (text.Length == 0 && sayParams.Length == 0)
+                // We can ignore any matches where both are empty
+                // or if they're Lua style comments
+                if ((text.Length == 0 && sayParams.Length == 0) || text.StartsWith("--"))
                 {
                     continue;
                 }
@@ -196,14 +200,14 @@ namespace Fungus
 
             return items;
         }
-                        		
-		/// <summary>
-		/// Using the string of say parameters before the ':',
-		/// set the current character, position and portrait if provided.
-		/// </summary>
-		/// <param name="sayParams">The list of say parameters</param>
+                                
+        /// <summary>
+        /// Using the string of say parameters before the ':',
+        /// set the current character, position and portrait if provided.
+        /// </summary>
+        /// <param name="sayParams">The list of say parameters</param>
         protected virtual ConversationItem CreateConversationItem(string[] sayParams, string text, Character currentCharacter)
-		{
+        {
             var item = new ConversationItem();
 
             // Populate the story text to be written
@@ -215,7 +219,7 @@ namespace Fungus
                 return item;
             }
 
-			// try to find the character param first, since we need to get its portrait
+            // try to find the character param first, since we need to get its portrait
             int characterIndex = -1;
             if (characters == null)
             {
@@ -223,17 +227,17 @@ namespace Fungus
             }
 
             for (int i = 0; item.Character == null && i < sayParams.Length; i++)
-			{
-				for (int j = 0; j < characters.Length; j++)
-				{
-					if (characters[j].NameStartsWith(sayParams[i]))
-					{
+            {
+                for (int j = 0; j < characters.Length; j++)
+                {
+                    if (characters[j].NameStartsWith(sayParams[i]))
+                    {
                         characterIndex = i;
                         item.Character = characters[j];
-						break;
-					}
-				}
-			}
+                        break;
+                    }
+                }
+            }
 
             // Assume last used character if none is specified now
             if (item.Character == null)
@@ -256,6 +260,25 @@ namespace Fungus
                     }
                 }
             }
+
+            int flipIndex = -1;
+            if (item.Character != null)
+            {
+                for (int i = 0; i < sayParams.Length; i++)
+                {
+                    if (i != characterIndex &&
+                        i != hideIndex &&
+                        (string.Compare(sayParams[i], ">>>", true) == 0
+                         || string.Compare(sayParams[i], "<<<", true) == 0))
+                    {
+                        if (string.Compare(sayParams[i], ">>>", true) == 0) item.FacingDirection = FacingDirection.Right;
+                        if (string.Compare(sayParams[i], "<<<", true) == 0) item.FacingDirection = FacingDirection.Left;
+                        flipIndex = i;
+                        item.Flip = true;
+                        break;
+                    }
+                }
+            }
                 
             // Next see if we can find a portrait for this character
             int portraitIndex = -1;
@@ -266,7 +289,8 @@ namespace Fungus
                     if (item.Portrait == null && 
                         item.Character != null &&
                         i != characterIndex && 
-                        i != hideIndex) 
+                        i != hideIndex &&
+                        i != flipIndex) 
                     {
                         Sprite s = item.Character.GetPortrait(sayParams[i]);
                         if (s != null)
@@ -300,7 +324,7 @@ namespace Fungus
             }
 
             return item;
-		}
+        }
 
         /// <summary>
         /// Splits the string passed in by the delimiters passed in.
@@ -348,5 +372,5 @@ namespace Fungus
 
             return results.ToArray();
         }
-	}
+    }
 }

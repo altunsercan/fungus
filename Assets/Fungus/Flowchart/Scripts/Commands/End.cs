@@ -1,51 +1,47 @@
-/**
- * This code is part of the Fungus library (http://fungusgames.com) maintained by Chris Gregan (http://twitter.com/gofungus).
- * It is released for free under the MIT open source license (https://github.com/snozbot/fungus/blob/master/LICENSE)
- */
+// This code is part of the Fungus library (http://fungusgames.com) maintained by Chris Gregan (http://twitter.com/gofungus).
+// It is released for free under the MIT open source license (https://github.com/snozbot/fungus/blob/master/LICENSE)
 
 using UnityEngine;
-using System;
-using System.Collections;
-using System.Collections.Generic;
 
 namespace Fungus
 {
-	[CommandInfo("Flow", 
-	             "End", 
-	             "Marks the end of a conditional block.")]
-	[AddComponentMenu("")]
-	public class End : Command
-	{
-		[NonSerialized]
-		public bool loop = false;
+    /// <summary>
+    /// Marks the end of a conditional block.
+    /// </summary>
+    [CommandInfo("Flow", 
+                 "End", 
+                 "Marks the end of a conditional block.")]
+    [AddComponentMenu("")]
+    public class End : Command
+    {
+        public bool Loop { get; set; }
 
-		public override void OnEnter()
-		{
-			if (loop)
-			{
-				for (int i = commandIndex - 1; i >= 0; --i)
-				{
-					System.Type commandType = parentBlock.commandList[i].GetType();
-					if (commandType == typeof(While))
-					{
-						Continue(i);
-						return;
-					}
-				}
-			}
+        public override void OnEnter()
+        {
+            if (Loop)
+            {
+                for (int i = CommandIndex - 1; i >= 0; --i)
+                {
+                    System.Type commandType = ParentBlock.CommandList[i].GetType();
+                    if (commandType == typeof(While))
+                    {
+                        Continue(i);
+                        return;
+                    }
+                }
+            }
 
-			Continue();
-		}
+            Continue();
+        }
 
-		public override bool CloseBlock()
-		{
-			return true;
-		}
+        public override bool CloseBlock()
+        {
+            return true;
+        }
 
-		public override Color GetButtonColor()
-		{
-			return new Color32(253, 253, 150, 255);
-		}
-	}
-
+        public override Color GetButtonColor()
+        {
+            return new Color32(253, 253, 150, 255);
+        }
+    }
 }

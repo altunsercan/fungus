@@ -1,37 +1,31 @@
-/**
- * This code is part of the Fungus library (http://fungusgames.com) maintained by Chris Gregan (http://twitter.com/gofungus).
- * It is released for free under the MIT open source license (https://github.com/snozbot/fungus/blob/master/LICENSE)
- */
+// This code is part of the Fungus library (http://fungusgames.com) maintained by Chris Gregan (http://twitter.com/gofungus).
+// It is released for free under the MIT open source license (https://github.com/snozbot/fungus/blob/master/LICENSE)
 
 ﻿using UnityEngine;
 using System;
-using System.Reflection;
-using System.Linq;
-using System.Collections;
 using System.Collections.Generic;
 using MoonSharp.Interpreter;
 
 namespace Fungus
 {
-
-	/// <summary>
-	/// Base class for a component which registers Lua Bindings.
-	/// When the Lua Environment initialises, it finds all components in the scene that inherit
-	/// from LuaBindingsBase and calls them to add their bindings.
-	/// </summary>
-	public abstract class LuaBindingsBase : MonoBehaviour
-	{
-		/// <summary>
-		/// Add all declared bindings to the globals table.
-		/// </summary>
-		public abstract void AddBindings(LuaEnvironment luaEnvironment);
-	}
+    /// <summary>
+    /// Base class for a component which registers Lua Bindings.
+    /// When the Lua Environment initialises, it finds all components in the scene that inherit
+    /// from LuaBindingsBase and calls them to add their bindings.
+    /// </summary>
+    public abstract class LuaBindingsBase : MonoBehaviour
+    {
+        /// <summary>
+        /// Add all declared bindings to the globals table.
+        /// </summary>
+        public abstract void AddBindings(LuaEnvironment luaEnvironment);
+    }
 
     /// <summary>
     /// Component which manages a list of bound objects to be accessed in Lua scripts.
     /// </summary>
     [ExecuteInEditMode]
-	public class LuaBindings : LuaBindingsBase 
+    public class LuaBindings : LuaBindingsBase 
     {
         /// <summary>
         /// Represents a single Unity object (+ optional component) bound to a string key.
@@ -45,31 +39,32 @@ namespace Fungus
         }
 
         [Tooltip("Add bindings to every Lua Environment in the scene. If false, only add bindings to a specific Lua Environment.")]
-        public bool allEnvironments = true;
+        [SerializeField] protected bool allEnvironments = true;
 
         [Tooltip("The specific LuaEnvironment to register the bindings in.")]
-        public LuaEnvironment luaEnvironment;
+        [SerializeField] protected LuaEnvironment luaEnvironment;
 
         /// <summary>
         /// Name of global table variable to store bindings in. If left blank then each binding will be added as a global variable.
         /// </summary>
         [Tooltip("Name of global table variable to store bindings in. If left blank then each binding will be added as a global variable.")]
-        public string tableName = "";
+        [SerializeField] protected string tableName = "";
 
-		[Tooltip("Register all CLR types used by the bound objects so that they can be accessed from Lua. If you don't use this option you will need to register these types yourself.")]
-		public bool registerTypes = true;
+        [Tooltip("Register all CLR types used by the bound objects so that they can be accessed from Lua. If you don't use this option you will need to register these types yourself.")]
+        [SerializeField] protected bool registerTypes = true;
 
-		[HideInInspector]
-		public List<string> boundTypes = new List<string>();
+        [HideInInspector]
+        [SerializeField] protected List<string> boundTypes = new List<string>();
 
         /// <summary>
         /// The list of Unity objects to be bound for access in Lua.
         /// </summary>
         [Tooltip("The list of Unity objects to be bound to make them accessible in Lua script.")]
-        public List<BoundObject> boundObjects = new List<BoundObject>();
+        [SerializeField] protected List<BoundObject> boundObjects = new List<BoundObject>();
+        public List<BoundObject> BoundObjects { get { return boundObjects; } }
 
         [Tooltip("Show inherited public members.")]
-        public bool showInherited;
+        [SerializeField] protected bool showInherited;
 
         /// <summary>
         /// Always ensure there is at least one row in the bound objects list.
@@ -125,14 +120,14 @@ namespace Fungus
                 Debug.LogError("Bindings table must not be null");
             }
 
-			// Register types of bound objects with MoonSharp
-			if (registerTypes)
-			{
-				foreach (string typeName in boundTypes)
-				{
-					LuaEnvironment.RegisterType(typeName);
-				}
-			}
+            // Register types of bound objects with MoonSharp
+            if (registerTypes)
+            {
+                foreach (string typeName in boundTypes)
+                {
+                    LuaEnvironment.RegisterType(typeName);
+                }
+            }
 
             for (int i = 0; i < boundObjects.Count; ++i)
             {
@@ -176,5 +171,4 @@ namespace Fungus
             }
         }
     }
-
 }

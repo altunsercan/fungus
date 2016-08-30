@@ -1,7 +1,5 @@
-/**
- * This code is part of the Fungus library (http://fungusgames.com) maintained by Chris Gregan (http://twitter.com/gofungus).
- * It is released for free under the MIT open source license (https://github.com/snozbot/fungus/blob/master/LICENSE)
- */
+// This code is part of the Fungus library (http://fungusgames.com) maintained by Chris Gregan (http://twitter.com/gofungus).
+// It is released for free under the MIT open source license (https://github.com/snozbot/fungus/blob/master/LICENSE)
 
 ﻿using UnityEditor;
 using UnityEditorInternal;
@@ -10,12 +8,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.IO;
 using UnityEditor.Callbacks;
 
 namespace Fungus
 {
-    
     [CustomEditor (typeof(LuaBindings))]
     public class LuaBindingsEditor : Editor 
     {
@@ -36,7 +32,7 @@ namespace Fungus
             allLuaEnvironmentsProp = serializedObject.FindProperty("allEnvironments");
             luaEnvironmentProp = serializedObject.FindProperty("luaEnvironment");
             tableNameProp = serializedObject.FindProperty("tableName");
-			registerTypesProp = serializedObject.FindProperty("registerTypes");
+            registerTypesProp = serializedObject.FindProperty("registerTypes");
             boundObjectsProp = serializedObject.FindProperty("boundObjects");
             showInheritedProp = serializedObject.FindProperty("showInherited");
             CreateBoundObjectsList();
@@ -67,7 +63,7 @@ namespace Fungus
                 if (EditorGUI.EndChangeCheck())
                 {
                     // Force the key to be a valid Lua variable name
-					LuaBindings luaBindings = target as LuaBindings;
+                    LuaBindings luaBindings = target as LuaBindings;
                     keyProp.stringValue = GetUniqueKey(luaBindings, keyProp.stringValue, index);
                 }
 
@@ -81,7 +77,7 @@ namespace Fungus
                 {
                     // Use the object name as the key
                     string keyName = objectProp.objectReferenceValue.name;
-					LuaBindings luaBindings = target as LuaBindings;
+                    LuaBindings luaBindings = target as LuaBindings;
                     element.FindPropertyRelative("key").stringValue = GetUniqueKey(luaBindings, keyName.ToLower(), index);
 
                     // Auto select any Flowchart component in the object
@@ -178,7 +174,7 @@ namespace Fungus
             }
 
             EditorGUILayout.PropertyField(tableNameProp);
-			EditorGUILayout.PropertyField(registerTypesProp);
+            EditorGUILayout.PropertyField(registerTypesProp);
 
             EditorGUILayout.LabelField("Object Bindings");
 
@@ -204,8 +200,8 @@ namespace Fungus
             List<string> details = new List<string>();
             details.Add("");
 
-			LuaBindings luaBindings = target as LuaBindings;
-            foreach (LuaBindings.BoundObject boundObject in luaBindings.boundObjects)
+            LuaBindings luaBindings = target as LuaBindings;
+            foreach (LuaBindings.BoundObject boundObject in luaBindings.BoundObjects)
             {
                 UnityEngine.Object inspectObject = boundObject.obj;
                 if (boundObject.component != null)
@@ -367,14 +363,14 @@ namespace Fungus
 
             // Build a hash of all keys currently in use
             HashSet<string> keyhash = new HashSet<string>();
-            for (int i = 0; i < luaBindings.boundObjects.Count; ++i)
+            for (int i = 0; i < luaBindings.BoundObjects.Count; ++i)
             {
                 if (i == ignoreIndex)
                 {
                     continue;
                 }
 
-                keyhash.Add(luaBindings.boundObjects[i].key);
+                keyhash.Add(luaBindings.BoundObjects[i].key);
             }
 
             // Append a suffix to make the key unique
@@ -407,12 +403,12 @@ namespace Fungus
         /// <summary>
         /// Update the list of bound types on the LuaBindings object.
         /// </summary>
-		protected static void PopulateBoundTypes(LuaBindings luaBindings, SerializedObject so)
+        protected static void PopulateBoundTypes(LuaBindings luaBindings, SerializedObject so)
         {
             // Use a temp HashSet to store the list of types.
             // The final list is stored as a list of type strings.
             HashSet<System.Type> typeSet = new HashSet<System.Type>();
-            foreach (LuaBindings.BoundObject boundObject in luaBindings.boundObjects)
+            foreach (LuaBindings.BoundObject boundObject in luaBindings.BoundObjects)
             {
                 if (boundObject.obj == null)
                 {
@@ -427,17 +423,17 @@ namespace Fungus
                 }
             }
                 
-			// Store the final list of types in the luaBindings object 
-			SerializedProperty boundTypesProp = so.FindProperty("boundTypes");
-			boundTypesProp.ClearArray();
-			int index = 0;
-			foreach (System.Type t in typeSet)
-			{
-				boundTypesProp.InsertArrayElementAtIndex(index);
-				SerializedProperty element = boundTypesProp.GetArrayElementAtIndex(index);
-				element.stringValue = t.AssemblyQualifiedName;
-				index++;
-			}
+            // Store the final list of types in the luaBindings object 
+            SerializedProperty boundTypesProp = so.FindProperty("boundTypes");
+            boundTypesProp.ClearArray();
+            int index = 0;
+            foreach (System.Type t in typeSet)
+            {
+                boundTypesProp.InsertArrayElementAtIndex(index);
+                SerializedProperty element = boundTypesProp.GetArrayElementAtIndex(index);
+                element.stringValue = t.AssemblyQualifiedName;
+                index++;
+            }
         }
 
         /// <summary>
@@ -503,7 +499,7 @@ namespace Fungus
                     AddSubType(typeSet, containedType);
                 }
             }
-			else if (t != typeof(System.Object))
+            else if (t != typeof(System.Object))
             {
                 // Non-IEnumerable/IEnumerator types will be registered.
                 typeSet.Add(t);
